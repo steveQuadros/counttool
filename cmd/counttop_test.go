@@ -64,7 +64,7 @@ func TestExecuteConcurrent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Execute(tt.readers, tt.count)
+			got, err := ExecuteConcurrent(tt.readers, tt.count)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Execute() error = %v, wantErr %v", err, tt.wantErr)
 				return
