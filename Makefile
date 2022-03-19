@@ -22,11 +22,11 @@ benchscanner: fmt vet
 cover: test
 	go tool cover -html=coverage.out
 
-concreal:
+concreal: test
 	go run main.go -concurrent -file huge.txt -file huge.txt -file huge.txt -file huge.txt - file huge_processed.txt -file med_processed.txt -file huge.txt
 
-real:
+real: test
 	go run main.go -file huge.txt -file huge.txt -file huge.txt -file huge.txt - file huge_processed.txt -file med_processed.txt -file huge.txt
 
-build:
+build: test
 	go build -o counttool main.go
