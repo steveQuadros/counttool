@@ -12,27 +12,27 @@ type Counter interface {
 	Top(int) PhraseOutputList
 }
 
-type PhraseCount struct {
+type Count struct {
 	data map[string]int
 }
 
-var _ Counter = (*PhraseCount)(nil)
+var _ Counter = (*Count)(nil)
 
-func NewPhraseCount() PhraseCount {
-	return PhraseCount{
+func NewPhraseCount() Count {
+	return Count{
 		data: make(map[string]int),
 	}
 }
 
-func (p *PhraseCount) Inc(phrase string) {
+func (p *Count) Inc(phrase string) {
 	p.data[phrase]++
 }
 
-func (p *PhraseCount) GetCounts() map[string]int {
+func (p *Count) GetCounts() map[string]int {
 	return p.data
 }
 
-func (p *PhraseCount) GetCount(phrase string) int {
+func (p *Count) GetCount(phrase string) int {
 	if count, ok := p.data[phrase]; ok {
 		return count
 	} else {
@@ -40,7 +40,7 @@ func (p *PhraseCount) GetCount(phrase string) int {
 	}
 }
 
-func (p *PhraseCount) Top(n int) PhraseOutputList {
+func (p *Count) Top(n int) PhraseOutputList {
 	var all []PhraseOutput
 	for phrase, count := range p.data {
 		all = append(all, PhraseOutput{phrase, count})
@@ -56,32 +56,32 @@ func (p *PhraseCount) Top(n int) PhraseOutputList {
 	}
 }
 
-type PhraseCountConcurrent struct {
+type CountConcurrent struct {
 	data map[string]int
 	mu   sync.RWMutex
 }
 
-var _ Counter = (*PhraseCountConcurrent)(nil)
+var _ Counter = (*CountConcurrent)(nil)
 
-func NewPhraseCountConcurrent() PhraseCountConcurrent {
-	return PhraseCountConcurrent{
+func NewPhraseCountConcurrent() CountConcurrent {
+	return CountConcurrent{
 		data: make(map[string]int),
 		mu:   sync.RWMutex{},
 	}
 }
 
-func (p *PhraseCountConcurrent) Inc(phrase string) {
+func (p *CountConcurrent) Inc(phrase string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.data[phrase]++
 }
 
 // TODO unsafe to give access to this concurrently
-func (p *PhraseCountConcurrent) GetCounts() map[string]int {
+func (p *CountConcurrent) GetCounts() map[string]int {
 	return p.data
 }
 
-func (p *PhraseCountConcurrent) GetCount(phrase string) int {
+func (p *CountConcurrent) GetCount(phrase string) int {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	if count, ok := p.data[phrase]; ok {
@@ -91,7 +91,7 @@ func (p *PhraseCountConcurrent) GetCount(phrase string) int {
 	}
 }
 
-func (p *PhraseCountConcurrent) Top(n int) PhraseOutputList {
+func (p *CountConcurrent) Top(n int) PhraseOutputList {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	var all []PhraseOutput
