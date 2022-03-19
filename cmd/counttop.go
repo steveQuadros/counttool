@@ -6,18 +6,39 @@ import (
 	"io"
 )
 
-func Execute(readers []io.ReadCloser, count int) ([]phrasecount.PhraseOutput, error) {
+func Execute(readers []io.Reader, count int) (phrasecount.PhraseOutputList, error) {
 	counter := phrasecount.NewPhraseCount()
 	for _, r := range readers {
-		// wrap so defer statement closes file as quickly as possible, see: https://stackoverflow.com/a/45620423
 		if err := func() error {
 			if err := scanner.CountTop(r, &counter); err != nil {
 				return err
 			}
-			defer r.Close()
 			return nil
 		}(); err != nil {
 			return nil, err
+		}
+	}
+	return counter.Top(count), nil
+}
+
+func ExecuteConcurrent(readers []io.Reader, count, workers int) (phrasecount.PhraseOutputList, error) {
+	counter := phrasecount.NewPhraseCountConcurrent()
+	errors := make(chan error, len(readers))
+	defer close(errors)
+	for _, r := range readers {
+		go func(reader io.Reader) {
+			errors <- scanner.CountTop(reader, &counter)
+		}(r)
+	}
+
+	var doneCount int
+	for doneCount < len(readers) {
+		select {
+		case err := <-errors:
+			doneCount++
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return counter.Top(count), nil

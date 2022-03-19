@@ -52,7 +52,8 @@ func RemovePunc(word []byte) []byte {
 // trimWordOfPunctuation checks if last char is [a-z][A-Z][0-9]
 // or removes the last char if not
 // a more exhaustive check would need to handle UTF8 sequences, but this should work for a basic case
-// TODO - remove punctuation from any point in the word (handle malicious output)
+// TODO - remove punctuation from any point in the word (handle malicious output) - also seems to give wrong output
+// so speed is less useful than being correct
 func trimWordOfPunctuation(word *[]byte) {
 	lastChar := (*word)[len(*word)-1]
 	if !(lastChar >= 'a' && lastChar <= 'z') && !(lastChar >= 'A' && lastChar <= 'Z') && !(lastChar >= '0' && lastChar <= '9') {

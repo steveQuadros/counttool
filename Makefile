@@ -12,3 +12,6 @@ run: test
 
 runspecies: test
 	go run main.go -file species.txt
+
+bench: fmt vet
+	go test -bench=. ./cmd -benchmem -memprofile mem.out -cpuprofile cpu.out
