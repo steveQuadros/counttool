@@ -32,6 +32,49 @@ func CountTop(reader io.Reader, counter phrasecount.Counter) error {
 		return err
 	}
 	return nil
+
+}
+
+func CountTopProcessed(reader io.Reader, counter phrasecount.Counter) error {
+	scanner := bufio.NewScanner(reader)
+	scanner.Split(bufio.ScanWords)
+	var phrase [][]byte
+	for scanner.Scan() {
+		word := scanner.Bytes()
+		phrase = append(phrase, word)
+
+		if len(phrase) == 3 {
+			joined := bytes.Join(phrase, []byte{' '})
+			counter.Inc(string(joined))
+			phrase = phrase[1:]
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Process creates a new file that is preprocessed with no punctuation and all same case
+func Process(reader io.Reader, writer io.Writer) error {
+	scanner := bufio.NewScanner(reader)
+	scanner.Split(bufio.ScanWords)
+	for scanner.Scan() {
+		word := scanner.Bytes()
+		downcased := bytes.ToLower(word)
+		noPunc := RemovePunc(downcased)
+		noPunc = append(noPunc, ' ')
+		_, err := writer.Write(noPunc)
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // RemovePunc removes punctuation from any words

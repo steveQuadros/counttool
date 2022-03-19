@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"bufio"
 	"github.com/stevequadros/counttop/phrasecount"
 	"github.com/stevequadros/counttop/scanner"
 	"io"
+	"os"
 )
 
 func Execute(readers []io.Reader, count int) (phrasecount.PhraseOutputList, error) {
@@ -21,9 +23,9 @@ func Execute(readers []io.Reader, count int) (phrasecount.PhraseOutputList, erro
 	return counter.Top(count), nil
 }
 
-func ExecuteConcurrent(readers []io.Reader, count, workers int) (phrasecount.PhraseOutputList, error) {
+func ExecuteConcurrent(readers []io.Reader, count int) (phrasecount.PhraseOutputList, error) {
 	counter := phrasecount.NewPhraseCountConcurrent()
-	errors := make(chan error, len(readers))
+	errors := make(chan error)
 	defer close(errors)
 	for _, r := range readers {
 		go func(reader io.Reader) {
@@ -42,4 +44,14 @@ func ExecuteConcurrent(readers []io.Reader, count, workers int) (phrasecount.Phr
 		}
 	}
 	return counter.Top(count), nil
+}
+
+func Process(readers []io.Reader) error {
+	writer := bufio.NewWriter(os.Stdout)
+	for _, r := range readers {
+		if err := scanner.Process(r, writer); err != nil {
+			return err
+		}
+	}
+	return writer.Flush()
 }

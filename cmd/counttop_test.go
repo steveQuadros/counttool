@@ -21,9 +21,9 @@ func TestExecute(t *testing.T) {
 			getFiles(t),
 			3,
 			phrasecount.PhraseOutputList{
-				{Phrase: "of the same", Count: 5133},
-				{Phrase: "conditions of life", Count: 2009},
-				{Phrase: "the same species", Count: 2018},
+				{Phrase: "of the same", Count: 333},
+				{Phrase: "conditions of life", Count: 134},
+				{Phrase: "the same species", Count: 128},
 			},
 			false,
 		},
@@ -54,9 +54,9 @@ func TestExecuteConcurrent(t *testing.T) {
 			getFiles(t),
 			3,
 			phrasecount.PhraseOutputList{
-				{Phrase: "of the same", Count: 5133},
-				{Phrase: "conditions of life", Count: 2009},
-				{Phrase: "the same species", Count: 2018},
+				{Phrase: "of the same", Count: 333},
+				{Phrase: "conditions of life", Count: 134},
+				{Phrase: "the same species", Count: 128},
 			},
 			false,
 		},
@@ -85,7 +85,7 @@ func BenchmarkExecute(b *testing.B) {
 func BenchmarkExecuteConcurrent(b *testing.B) {
 	in := getFiles(b)
 	for i := 0; i < b.N; i++ {
-		_, err := ExecuteConcurrent(in, 100, 4)
+		_, err := ExecuteConcurrent(in, 100)
 		require.NoError(b, err)
 	}
 }
@@ -104,7 +104,5 @@ func getFiles(t testBT) []io.Reader {
 	require.NoError(t, err)
 	fullEx, err := os.Open("../species.txt")
 	require.NoError(t, err)
-	hugeEx, err := os.Open("../huge.txt")
-	require.NoError(t, err)
-	return []io.Reader{smallEx, medEx, largeEx, fullEx, hugeEx}
+	return []io.Reader{smallEx, medEx, largeEx, fullEx}
 }

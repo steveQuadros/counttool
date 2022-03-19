@@ -29,10 +29,12 @@ func (f *FilesFlag) String() string {
 func main() {
 	var filesFlag FilesFlag
 	var topCount int
-	var workers int
+	var concurrent bool
+	var process bool
 	flag.Var(&filesFlag, "file", "Files to count phrases in. usage: ./counttop --file file1.txt --file file2.txt ")
 	flag.IntVar(&topCount, "count", 100, "number of top results to return. Default to 3.")
-	flag.IntVar(&workers, "workers", 1, "number of go routines to use")
+	flag.BoolVar(&concurrent, "concurrent", false, "run with go routines")
+	flag.BoolVar(&process, "process", false, "process file")
 	flag.Parse()
 
 	start := time.Now()
@@ -55,12 +57,22 @@ func main() {
 		}
 	}
 
+	if process {
+		if err := cmd.Process(in); err != nil {
+			logErrorAndExit("error processing file", err)
+		}
+		os.Exit(0)
+	}
+
 	var top phrasecount.PhraseOutputList
 	var err error
-	if workers == 1 {
-		top, err = cmd.Execute(in, topCount)
+	if concurrent {
+		fmt.Println("Running concurrent version")
+		top, err = cmd.ExecuteConcurrent(in, topCount)
 	} else {
-		top, err = cmd.ExecuteConcurrent(in, topCount, workers)
+		fmt.Println("Running non-concurrent version")
+		top, err = cmd.Execute(in, topCount)
+
 	}
 
 	if err != nil {

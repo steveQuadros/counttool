@@ -187,6 +187,24 @@ func TestTrimLastCharacterPuncutation(t *testing.T) {
 	}
 }
 
+func BenchmarkCountTop(b *testing.B) {
+	f, err := os.Open("../species_processed.txt")
+	require.NoError(b, err)
+	for i := 0; i < b.N; i++ {
+		err := CountTop(f, newTestCounter())
+		require.NoError(b, err)
+	}
+}
+
+func BenchmarkCountTopProcessed(b *testing.B) {
+	f, err := os.Open("../species_processed.txt")
+	require.NoError(b, err)
+	for i := 0; i < b.N; i++ {
+		err := CountTopProcessed(f, newTestCounter())
+		require.NoError(b, err)
+	}
+}
+
 func strPtr(s string) *string {
 	return &s
 }
