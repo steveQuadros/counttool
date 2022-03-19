@@ -3,31 +3,28 @@ package scanner
 import (
 	"bufio"
 	"bytes"
+	"github.com/stevequadros/counttop/phrasecount"
 	"io"
+	"unicode"
+	"unicode/utf8"
 )
 
-type Counter interface {
-	Inc(string)
-	GetCounts() map[string]int
-	GetCount(string) int
-}
-
-func CountTop3(reader io.Reader, counter Counter) error {
+func CountTop(reader io.Reader, counter phrasecount.Counter) error {
 	scanner := bufio.NewScanner(reader)
 	scanner.Split(bufio.ScanWords)
-	var words int
 	var phrase [][]byte
 	for scanner.Scan() {
 		word := scanner.Bytes()
-		words++
-		trimWordOfPunctuation(&word)
-		word = bytes.ToLower(word)
-		phrase = append(phrase, word)
-		if words == 3 {
+		downcased := bytes.ToLower(word)
+		noPunc := RemovePunc(downcased)
+		if len(noPunc) != 0 {
+			phrase = append(phrase, noPunc)
+		}
+
+		if len(phrase) == 3 {
 			joined := bytes.Join(phrase, []byte{' '})
 			counter.Inc(string(joined))
 			phrase = phrase[1:]
-			words = 2
 		}
 	}
 
@@ -35,6 +32,21 @@ func CountTop3(reader io.Reader, counter Counter) error {
 		return err
 	}
 	return nil
+}
+
+// RemovePunc removes punctuation from any words
+func RemovePunc(word []byte) []byte {
+	runes := bytes.Runes(word)
+	bs := make([]byte, len(runes)*utf8.UTFMax)
+
+	count := 0
+	for _, r := range runes {
+		if !unicode.IsPunct(r) {
+			count += utf8.EncodeRune(bs[count:], r)
+		}
+	}
+	bs = bs[:count]
+	return bs
 }
 
 // trimWordOfPunctuation checks if last char is [a-z][A-Z][0-9]

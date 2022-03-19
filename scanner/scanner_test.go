@@ -2,14 +2,19 @@ package scanner
 
 import (
 	"bytes"
+	"github.com/stevequadros/counttop/phrasecount"
 	"github.com/stretchr/testify/require"
 	"io"
+	"os"
+	"sort"
 	"testing"
 )
 
 type testCounter struct {
 	data map[string]int
 }
+
+var _ phrasecount.Counter = (*testCounter)(nil)
 
 func newTestCounter() *testCounter {
 	return &testCounter{
@@ -33,24 +38,47 @@ func (t *testCounter) GetCount(phrase string) int {
 	}
 }
 
+func (t *testCounter) Top(n int) phrasecount.PhraseOutputList {
+	var all []phrasecount.PhraseOutput
+	for p, c := range t.data {
+		all = append(all, phrasecount.PhraseOutput{Phrase: p, Count: c})
+	}
+	sort.Slice(all, func(i, j int) bool { return all[i].Count > all[j].Count })
+	if n == -1 || n >= len(t.data) {
+		return all
+	} else {
+		return all[:n]
+	}
+}
+
 func TestCountTop3(t *testing.T) {
+	smallEx, err := os.Open("../small.txt")
+	require.NoError(t, err)
+	medEx, err := os.Open("../med.txt")
+	require.NoError(t, err)
+	largeEx, err := os.Open("../large.txt")
+	require.NoError(t, err)
+	fullEx, err := os.Open("../species.txt")
+
 	tc := []struct {
 		name            string
 		r               io.Reader
-		c               Counter
+		c               phrasecount.Counter
 		expected        map[string]int
 		wantErr         bool
 		testPhrase      *string
 		testPhraseCount int
+		topCount        int
 	}{
 		{
 			"will count sections of overlapping 3 words",
-			bytes.NewBuffer([]byte("123 123 123 321 321 456")),
+			bytes.NewBuffer([]byte("123 123 123 321 321 456 ")),
 			newTestCounter(),
 			map[string]int{"123 123 123": 1, "123 123 321": 1, "123 321 321": 1, "321 321 456": 1},
 			false,
 			nil,
 			0,
+			-1,
 		},
 		{
 			"ignores punctuation at end of words",
@@ -60,6 +88,7 @@ func TestCountTop3(t *testing.T) {
 			false,
 			nil,
 			0,
+			-1,
 		},
 		{
 			"ignores line endings",
@@ -69,6 +98,7 @@ func TestCountTop3(t *testing.T) {
 			false,
 			strPtr("i love sandwiches"),
 			3,
+			-1,
 		},
 		{
 			"is case insensitive",
@@ -78,18 +108,59 @@ func TestCountTop3(t *testing.T) {
 			false,
 			strPtr("a man wakes"),
 			3,
+			-1,
+		},
+		{
+			"small example",
+			smallEx,
+			newTestCounter(),
+			map[string]int{"on the origin": 3, "origin of species": 3, "the origin of": 3, "the project gutenberg": 4},
+			false,
+			strPtr("the project gutenberg"),
+			4,
+			4,
+		},
+		{
+			"med example",
+			medEx,
+			newTestCounter(),
+			map[string]int{"on the origin": 6, "origin of species": 6, "the origin of": 6, "the project gutenberg": 4},
+			false,
+			strPtr("the project gutenberg"),
+			4,
+			4,
+		},
+		{
+			"large example",
+			largeEx,
+			newTestCounter(),
+			map[string]int{"of natural selection": 15, "on the origin": 14, "origin of species": 16, "the origin of": 17},
+			false,
+			strPtr("origin of species"),
+			16,
+			4,
+		},
+		{
+			"full example",
+			fullEx,
+			newTestCounter(),
+			map[string]int{"conditions of life": 125, "in the same": 116, "of the same": 320, "the same species": 126},
+			false,
+			strPtr("of the same"),
+			320,
+			4,
 		},
 	}
 
 	for _, tt := range tc {
 		t.Run(tt.name, func(t *testing.T) {
-			err := CountTop3(tt.r, tt.c)
+			err := CountTop(tt.r, tt.c)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 			}
-			require.Equal(t, tt.expected, tt.c.GetCounts())
+			require.Equal(t, tt.expected, tt.c.Top(tt.topCount).Map())
 			if tt.testPhrase != nil {
 				require.Equal(t, tt.testPhraseCount, tt.c.GetCount(*tt.testPhrase))
 			}
